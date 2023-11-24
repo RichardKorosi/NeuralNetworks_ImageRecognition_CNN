@@ -82,12 +82,13 @@ def test_imagenet_model_on_test_data():
 
 
 def create_model():
-    return keras.models.Sequential([
-        keras.layers.Flatten(input_shape=(224, 224, 3), name='layers_flatten'),
-        keras.layers.Dense(512, activation='relu', name='layers_dense'),
-        keras.layers.Dropout(0.2, name='layers_dropout'),
-        keras.layers.Dense(90, activation='softmax', name='layers_dense_2')
-    ])
+    model = keras.Sequential()
+    model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu', input_shape=(224, 224, 3), kernel_regularizer=l2(0.001)))
+    model.add(keras.layers.Dropout(0.5))
+    model.add(keras.layers.Conv2D(filters=64, kernel_size=3, activation='relu', kernel_regularizer=l2(0.001)))
+    model.add(keras.layers.Flatten())
+    model.add(keras.layers.Dense(90, activation='softmax'))
+    return model
 
 
 def train_convolutions():
@@ -97,28 +98,36 @@ def train_convolutions():
                   metrics=['accuracy'])
     model.fit(train_ds, epochs=10, validation_data=val_ds)
 
-    # Get the model's predictions on the validation dataset
-    predictions = model.predict(val_ds)
-    predicted_classes = np.argmax(predictions, axis=1)
+    # Predictions and Confusion Matrix on Train Set
+    predictions_train = model.predict(train_ds)
+    predicted_classes_train = np.argmax(predictions_train, axis=1)
+    true_labels_train = train_ds.classes
+    cm_train = confusion_matrix(true_labels_train, predicted_classes_train)
+    class_names_train = train_ds.class_names
 
-    # Get the true labels of the validation dataset
-    true_labels = val_ds.classes
+    # Plot the confusion matrix for the train set
+    plot_confusion_matrix(cm_train, class_names_train, title="Confusion matrix on train set")
 
-    # Generate the confusion matrix
-    cm = confusion_matrix(true_labels, predicted_classes)
+    # Predictions and Confusion Matrix on Test Set
+    predictions_test = model.predict(test_ds)
+    predicted_classes_test = np.argmax(predictions_test, axis=1)
+    true_labels_test = test_ds.classes
+    cm_test = confusion_matrix(true_labels_test, predicted_classes_test)
+    class_names_test = test_ds.class_names
 
-    # Get class names
-    class_names = val_ds.class_names
+    # Plot the confusion matrix for the test set
+    plot_confusion_matrix(cm_test, class_names_test, title="Confusion matrix on test set")
 
-    # Plot the confusion matrix
+    return None
+
+
+def plot_confusion_matrix(cm, class_names, title):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
     fig, ax = plt.subplots(figsize=(10, 10))
     disp.plot(ax=ax)
-    disp.ax_.set_title("Confusion matrix on validation set")
+    disp.ax_.set_title(title)
     disp.ax_.set(xlabel='Predicted', ylabel='True')
     plt.show()
-
-    return None
 
 
 show90animals()
