@@ -145,6 +145,5 @@ def plot_confusion_matrix(cm, title):
     plt.show()
 
 
-
 show90animals()
 train_convolutions()
