@@ -105,9 +105,12 @@ def train_convolutions():
     # Predictions and Confusion Matrix on Train Set
     predictions_train = model.predict(train_ds)
     predicted_classes_train = np.argmax(predictions_train, axis=1)
-    true_labels_train = train_ds.classes
+    # Create a mapping from class names to integer labels
+    class_name_to_label = {class_name: label for label, class_name in enumerate(train_ds.class_names)}
+    # Convert class names in the dataset to integer labels
+    true_labels_train = np.array([class_name_to_label[name] for name in train_ds.file_paths])
     cm_train = confusion_matrix(true_labels_train, predicted_classes_train)
-    class_names_train = train_ds.class_names
+    class_names_train = list(class_name_to_label.keys())
 
     # Plot the confusion matrix for the train set
     plot_confusion_matrix(cm_train, class_names_train, title="Confusion matrix on train set")
