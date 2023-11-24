@@ -20,7 +20,7 @@ test_dir = os.path.join(base_dir, 'test')
 animals_folders = list(pathlib.Path(train_dir).glob('*'))
 AUTOTUNE = tf.data.AUTOTUNE
 
-img_size = 150
+img_size = 224
 batch_size = 32
 
 
@@ -91,9 +91,9 @@ def test_imagenet_model_on_test_data():
 def create_model():
     model = keras.Sequential()
     model.add(keras.layers.Rescaling(1. / 255, input_shape=(img_size, img_size, 3)))
-    model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu', kernel_regularizer=l2(0.001)))
+    model.add(keras.layers.Conv2D(filters=2, kernel_size=4, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
-    model.add(keras.layers.Conv2D(filters=64, kernel_size=3, activation='relu'))
+    model.add(keras.layers.Conv2D(filters=2, kernel_size=4, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
     model.add(keras.layers.Dropout(0.5))
     model.add(keras.layers.Flatten())
@@ -106,7 +106,7 @@ def train_convolutions():
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
-    model.fit(train_ds, epochs=10, validation_data=val_ds, callbacks=[keras.callbacks.EarlyStopping(patience=2)])
+    model.fit(train_ds, epochs=20, validation_data=val_ds, callbacks=[keras.callbacks.EarlyStopping(patience=2)])
 
     # Predictions and Confusion Matrix on Train Set
     predictions_train = model.predict(train_ds)
@@ -114,6 +114,9 @@ def train_convolutions():
     true_labels_train = np.concatenate([y for x, y in train_ds], axis=0)
     cm_train = confusion_matrix(true_labels_train, predicted_classes_train)
 
+    # Calculate and print accuracy on the train set
+    accuracy_train = np.mean(predicted_classes_train == true_labels_train)
+    print(f"Accuracy on train set: {accuracy_train * 100:.2f}%")
     # Plot the confusion matrix for the train set
     plot_confusion_matrix(cm_train, title="Confusion matrix on train set")
 
@@ -123,6 +126,9 @@ def train_convolutions():
     true_labels_test = np.concatenate([y for x, y in test_ds], axis=0)
     cm_test = confusion_matrix(true_labels_test, predicted_classes_test)
 
+    # Calculate and print accuracy on the test set
+    accuracy_test = np.mean(predicted_classes_test == true_labels_test)
+    print(f"Accuracy on test set: {accuracy_test * 100:.2f}%")
     # Plot the confusion matrix for the test set
     plot_confusion_matrix(cm_test, title="Confusion matrix on test set")
 
@@ -130,12 +136,15 @@ def train_convolutions():
 
 
 def plot_confusion_matrix(cm, title):
-    plt.figure(figsize=(20, 13))
+    plt.figure(figsize=(33, 13))
     sns.heatmap(cm, annot=False, cmap='viridis', xticklabels=class_names, yticklabels=class_names)
     plt.title(title, fontsize=20)
-    plt.xticks(rotation=45)  # Rotate x labels by 45 degrees
+    plt.xticks(rotation=60)
+    plt.tick_params(axis='x', labelsize=10)
+    plt.tick_params(axis='y', labelsize=10)
     plt.show()
 
 
-# show90animals()
+
+show90animals()
 train_convolutions()
