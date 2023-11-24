@@ -11,14 +11,16 @@ from keras.src.regularizers import l2
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import math
 import keras
+import tensorflow as tf
 
 # base_dir = 'C:/Users/koros/Desktop/SUNS/Zadania/Zadanie3/SUNS-Zadanie3/data'
 base_dir = 'D:/Skola/ING/SEM1/SUNS/SUNS-Zadanie3/data'
 train_dir = os.path.join(base_dir, 'train')
 test_dir = os.path.join(base_dir, 'test')
 animals_folders = list(pathlib.Path(train_dir).glob('*'))
+AUTOTUNE = tf.data.AUTOTUNE
 
-img_size = 224
+img_size = 150
 batch_size = 32
 
 
@@ -53,17 +55,20 @@ def initialize_data():
     class_names = train_das.class_names
     print(class_names)
 
-    return train_das, val_das, test_das
+    return train_das, val_das, test_das, class_names
 
 
-train_ds, val_ds, test_ds = initialize_data()
+train_ds, val_ds, test_ds, class_names = initialize_data()
+train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
+val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 
 def show90animals():
     # Calculate the grid size based on the number of animal folders
     grid_size = math.ceil(math.sqrt(len(animals_folders)))
 
-    fig = plt.figure(figsize=(10, 10))  # Define the figure size
+    fig = plt.figure(figsize=(15, 15))  # Define the figure size
 
     for i, animal_folder in enumerate(animals_folders):
         animal_images = list(animal_folder.glob('*'))
@@ -72,6 +77,7 @@ def show90animals():
         ax = fig.add_subplot(grid_size, grid_size, i + 1)  # Add a subplot for each image
         ax.imshow(im)
         ax.axis('off')  # Hide axes
+        ax.set_title(class_names[i])
 
     plt.show()
     return None
@@ -84,7 +90,7 @@ def test_imagenet_model_on_test_data():
 
 def create_model():
     model = keras.Sequential()
-    model.add(keras.layers.Rescaling(1. / 255, input_shape=(224, 224, 3)))
+    model.add(keras.layers.Rescaling(1. / 255, input_shape=(img_size, img_size, 3)))
     model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu', kernel_regularizer=l2(0.001)))
     model.add(keras.layers.MaxPooling2D())
     model.add(keras.layers.Conv2D(filters=64, kernel_size=3, activation='relu'))
@@ -105,25 +111,22 @@ def train_convolutions():
     # Predictions and Confusion Matrix on Train Set
     predictions_train = model.predict(train_ds)
     predicted_classes_train = np.argmax(predictions_train, axis=1)
-    # Create a mapping from class names to integer labels
-    class_name_to_label = {class_name: label for label, class_name in enumerate(train_ds.class_names)}
-    # Convert class names in the dataset to integer labels
-    true_labels_train = np.array([class_name_to_label[name] for name in train_ds.file_paths])
+    true_labels_train = np.concatenate([y for x, y in train_ds], axis=0)
     cm_train = confusion_matrix(true_labels_train, predicted_classes_train)
-    class_names_train = list(class_name_to_label.keys())
+    # class_names_train = train_ds.class_names
 
     # Plot the confusion matrix for the train set
-    plot_confusion_matrix(cm_train, class_names_train, title="Confusion matrix on train set")
+    plot_confusion_matrix(cm_train, class_names, title="Confusion matrix on train set")
 
     # Predictions and Confusion Matrix on Test Set
     predictions_test = model.predict(test_ds)
     predicted_classes_test = np.argmax(predictions_test, axis=1)
-    true_labels_test = test_ds.classes
+    true_labels_test = np.concatenate([y for x, y in test_ds], axis=0)
     cm_test = confusion_matrix(true_labels_test, predicted_classes_test)
-    class_names_test = test_ds.class_names
+    # class_names_test = test_ds.class_names
 
     # Plot the confusion matrix for the test set
-    plot_confusion_matrix(cm_test, class_names_test, title="Confusion matrix on test set")
+    plot_confusion_matrix(cm_test, class_names, title="Confusion matrix on test set")
 
     return None
 
@@ -131,7 +134,7 @@ def train_convolutions():
 def plot_confusion_matrix(cm, class_names, title):
     disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
     fig, ax = plt.subplots(figsize=(10, 10))
-    disp.plot(ax=ax)
+    disp.plot(ax=ax, values_format=None)  # Set values_format to None
     disp.ax_.set_title(title)
     disp.ax_.set(xlabel='Predicted', ylabel='True')
     plt.show()
