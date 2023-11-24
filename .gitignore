@@ -186,3 +186,5 @@ data/__MACOSX/train/._woodpecker
 data/__MACOSX/train/._zebra
 *.iml
 *.xml
+.idea/misc.xml
+.idea/SUNS-Zadanie3.iml

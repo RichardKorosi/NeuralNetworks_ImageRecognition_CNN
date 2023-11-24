@@ -90,7 +90,6 @@ def create_model():
     model.add(keras.layers.Conv2D(filters=64, kernel_size=3, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
     model.add(keras.layers.Dropout(0.5))
-
     model.add(keras.layers.Flatten())
     model.add(keras.layers.Dense(90, activation='softmax'))
     return model
@@ -101,7 +100,7 @@ def train_convolutions():
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
-    model.fit(train_ds, epochs=10, validation_data=val_ds)
+    model.fit(train_ds, epochs=1, validation_data=val_ds)
 
     # Predictions and Confusion Matrix on Train Set
     predictions_train = model.predict(train_ds)
@@ -135,5 +134,5 @@ def plot_confusion_matrix(cm, class_names, title):
     plt.show()
 
 
-show90animals()
+# show90animals()
 train_convolutions()
