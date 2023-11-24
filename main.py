@@ -84,9 +84,13 @@ def test_imagenet_model_on_test_data():
 
 def create_model():
     model = keras.Sequential()
-    model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu', input_shape=(224, 224, 3), kernel_regularizer=l2(0.001)))
+    model.add(keras.layers.Rescaling(1. / 255, input_shape=(224, 224, 3)))
+    model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu', kernel_regularizer=l2(0.001)))
+    model.add(keras.layers.MaxPooling2D())
+    model.add(keras.layers.Conv2D(filters=64, kernel_size=3, activation='relu'))
+    model.add(keras.layers.MaxPooling2D())
     model.add(keras.layers.Dropout(0.5))
-    model.add(keras.layers.Conv2D(filters=64, kernel_size=3, activation='relu', kernel_regularizer=l2(0.001)))
+
     model.add(keras.layers.Flatten())
     model.add(keras.layers.Dense(90, activation='softmax'))
     return model
