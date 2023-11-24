@@ -106,7 +106,7 @@ def train_convolutions():
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
-    model.fit(train_ds, epochs=1, validation_data=val_ds)
+    model.fit(train_ds, epochs=10, validation_data=val_ds, callbacks=[keras.callbacks.EarlyStopping(patience=2)])
 
     # Predictions and Confusion Matrix on Train Set
     predictions_train = model.predict(train_ds)
