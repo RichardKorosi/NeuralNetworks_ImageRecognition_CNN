@@ -113,30 +113,27 @@ def train_convolutions():
     predicted_classes_train = np.argmax(predictions_train, axis=1)
     true_labels_train = np.concatenate([y for x, y in train_ds], axis=0)
     cm_train = confusion_matrix(true_labels_train, predicted_classes_train)
-    # class_names_train = train_ds.class_names
 
     # Plot the confusion matrix for the train set
-    plot_confusion_matrix(cm_train, class_names, title="Confusion matrix on train set")
+    plot_confusion_matrix(cm_train, title="Confusion matrix on train set")
 
     # Predictions and Confusion Matrix on Test Set
     predictions_test = model.predict(test_ds)
     predicted_classes_test = np.argmax(predictions_test, axis=1)
     true_labels_test = np.concatenate([y for x, y in test_ds], axis=0)
     cm_test = confusion_matrix(true_labels_test, predicted_classes_test)
-    # class_names_test = test_ds.class_names
 
     # Plot the confusion matrix for the test set
-    plot_confusion_matrix(cm_test, class_names, title="Confusion matrix on test set")
+    plot_confusion_matrix(cm_test, title="Confusion matrix on test set")
 
     return None
 
 
-def plot_confusion_matrix(cm, class_names, title):
-    disp = ConfusionMatrixDisplay(confusion_matrix=cm, display_labels=class_names)
-    fig, ax = plt.subplots(figsize=(10, 10))
-    disp.plot(ax=ax, values_format=None)  # Set values_format to None
-    disp.ax_.set_title(title)
-    disp.ax_.set(xlabel='Predicted', ylabel='True')
+def plot_confusion_matrix(cm, title):
+    plt.figure(figsize=(20, 13))
+    sns.heatmap(cm, annot=False, cmap='viridis', xticklabels=class_names, yticklabels=class_names)
+    plt.title(title, fontsize=20)
+    plt.xticks(rotation=45)  # Rotate x labels by 45 degrees
     plt.show()
 
 
