@@ -184,3 +184,5 @@ data/__MACOSX/train/._wolf
 data/__MACOSX/train/._wombat
 data/__MACOSX/train/._woodpecker
 data/__MACOSX/train/._zebra
+*.iml
+*.xml
