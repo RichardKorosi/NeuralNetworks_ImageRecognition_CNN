@@ -7,6 +7,7 @@ import os
 import PIL.Image
 from keras.src.applications import ResNet50
 from keras.src.applications.convnext import preprocess_input, decode_predictions
+from keras.src.regularizers import l2
 from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
 import math
 import keras
