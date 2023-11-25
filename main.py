@@ -91,12 +91,12 @@ def test_imagenet_model_on_test_data():
 def create_model():
     model = keras.Sequential()
     model.add(keras.layers.Rescaling(1. / 255, input_shape=(img_size, img_size, 3)))
-    model.add(keras.layers.Conv2D(filters=32, kernel_size=2, activation='relu'))
+    model.add(keras.layers.Conv2D(filters=16, kernel_size=2, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
-    model.add(keras.layers.Dropout(0.5))
-    model.add(keras.layers.Conv2D(filters=4, kernel_size=2, activation='relu'))
+    model.add(keras.layers.Dropout(0.8))
+    model.add(keras.layers.Conv2D(filters=16, kernel_size=2, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
-    model.add(keras.layers.Dropout(0.5))
+    model.add(keras.layers.Dropout(0.7))
     model.add(keras.layers.Flatten())
     model.add(keras.layers.Dense(90, activation='softmax'))
     return model
@@ -104,17 +104,18 @@ def create_model():
 
 def train_convolutions():
     model = create_model()
-    model.compile(optimizer='adam',
+    optimizer = keras.optimizers.Adam(learning_rate=0.0002)
+    model.compile(optimizer=optimizer,
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
-    
-    history = model.fit(train_ds, epochs=20, validation_data=val_ds, callbacks=[keras.callbacks.EarlyStopping(patience=2, min_delta=0.001)])
+
+    history = model.fit(train_ds, epochs=40, validation_data=val_ds, callbacks=[
+        keras.callbacks.EarlyStopping(monitor='val_loss', patience=0, restore_best_weights=True)])
 
     train_scores = model.evaluate(train_ds, verbose=0)
     test_scores = model.evaluate(test_ds, verbose=0)
     print(f"Train accuracy: {train_scores[1]:.4f}")
     print(f"Test accuracy: {test_scores[1]:.4f}")
-    
 
     # Predictions and Confusion Matrix on Train Set
     predictions_train = model.predict(train_ds)
@@ -122,7 +123,6 @@ def train_convolutions():
     actuals_train = np.concatenate([y for x, y in train_ds], axis=0)
     cm_train = confusion_matrix(actuals_train, predictions_train)
     plot_confusion_matrix(cm_train, title="Confusion matrix on train set")
-
 
     # Predictions and Confusion Matrix on Test Set
     predictions_test = model.predict(test_ds)
@@ -152,7 +152,6 @@ def train_convolutions():
 
     plt.tight_layout()
     plt.show()
-
 
     return None
 
