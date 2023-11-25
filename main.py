@@ -108,7 +108,7 @@ def train_convolutions():
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
     
-    history = model.fit(train_ds, epochs=20, validation_data=val_ds, callbacks=[keras.callbacks.EarlyStopping(patience=2)])
+    history = model.fit(train_ds, epochs=20, validation_data=val_ds, callbacks=[keras.callbacks.EarlyStopping(patience=2, min_delta=0.001)])
 
     train_scores = model.evaluate(train_ds, verbose=0)
     test_scores = model.evaluate(test_ds, verbose=0)
@@ -167,5 +167,5 @@ def plot_confusion_matrix(cm, title):
     plt.show()
 
 
-show90animals()
+# show90animals()
 train_convolutions()
