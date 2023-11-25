@@ -91,9 +91,10 @@ def test_imagenet_model_on_test_data():
 def create_model():
     model = keras.Sequential()
     model.add(keras.layers.Rescaling(1. / 255, input_shape=(img_size, img_size, 3)))
-    model.add(keras.layers.Conv2D(filters=2, kernel_size=4, activation='relu'))
+    model.add(keras.layers.Conv2D(filters=32, kernel_size=2, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
-    model.add(keras.layers.Conv2D(filters=2, kernel_size=4, activation='relu'))
+    model.add(keras.layers.Dropout(0.5))
+    model.add(keras.layers.Conv2D(filters=4, kernel_size=2, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
     model.add(keras.layers.Dropout(0.5))
     model.add(keras.layers.Flatten())
@@ -106,31 +107,52 @@ def train_convolutions():
     model.compile(optimizer='adam',
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
-    model.fit(train_ds, epochs=20, validation_data=val_ds, callbacks=[keras.callbacks.EarlyStopping(patience=2)])
+    
+    history = model.fit(train_ds, epochs=20, validation_data=val_ds, callbacks=[keras.callbacks.EarlyStopping(patience=2)])
+
+    train_scores = model.evaluate(train_ds, verbose=0)
+    test_scores = model.evaluate(test_ds, verbose=0)
+    print(f"Train accuracy: {train_scores[1]:.4f}")
+    print(f"Test accuracy: {test_scores[1]:.4f}")
+    
 
     # Predictions and Confusion Matrix on Train Set
     predictions_train = model.predict(train_ds)
-    predicted_classes_train = np.argmax(predictions_train, axis=1)
-    true_labels_train = np.concatenate([y for x, y in train_ds], axis=0)
-    cm_train = confusion_matrix(true_labels_train, predicted_classes_train)
-
-    # Calculate and print accuracy on the train set
-    accuracy_train = np.mean(predicted_classes_train == true_labels_train)
-    print(f"Accuracy on train set: {accuracy_train * 100:.2f}%")
-    # Plot the confusion matrix for the train set
+    predictions_train = np.argmax(predictions_train, axis=1)
+    actuals_train = np.concatenate([y for x, y in train_ds], axis=0)
+    cm_train = confusion_matrix(actuals_train, predictions_train)
     plot_confusion_matrix(cm_train, title="Confusion matrix on train set")
+
 
     # Predictions and Confusion Matrix on Test Set
     predictions_test = model.predict(test_ds)
-    predicted_classes_test = np.argmax(predictions_test, axis=1)
-    true_labels_test = np.concatenate([y for x, y in test_ds], axis=0)
-    cm_test = confusion_matrix(true_labels_test, predicted_classes_test)
-
-    # Calculate and print accuracy on the test set
-    accuracy_test = np.mean(predicted_classes_test == true_labels_test)
-    print(f"Accuracy on test set: {accuracy_test * 100:.2f}%")
-    # Plot the confusion matrix for the test set
+    predictions_test = np.argmax(predictions_test, axis=1)
+    actuals_test = np.concatenate([y for x, y in test_ds], axis=0)
+    cm_test = confusion_matrix(actuals_test, predictions_test)
     plot_confusion_matrix(cm_test, title="Confusion matrix on test set")
+
+    # Plot the accuracy for each epoch
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='train_accuracy')
+    plt.plot(history.history['val_accuracy'], label='val_accuracy')
+    plt.title('Accuracy/Epochs')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+
+    # Plot the loss for each epoch
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='train_loss')
+    plt.plot(history.history['val_loss'], label='val_loss')
+    plt.title('Loss/Epochs')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
 
     return None
 
