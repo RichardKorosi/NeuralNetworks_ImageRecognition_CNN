@@ -1,6 +1,5 @@
 import matplotlib.pyplot as plt
 import numpy as np
-import pandas as pd
 import seaborn as sns
 import pathlib
 import os
@@ -84,27 +83,17 @@ def show90animals():
 
 
 def test_imagenet_model_on_test_data():
-    # Load the pre-trained ResNet50 model
     model = ResNet50(weights='imagenet')
-    # Dictionary to store predictions
     predictions = {}
 
-    # Loop over the dataset
     for images, labels in test_ds:
-        # Preprocess the images
         x = preprocess_input(images)
-
-        # Make a prediction
         preds = model.predict(x)
-
-        # Decode the results into a list of tuples (class, description, probability)
         for i in range(len(preds)):
             predictions[labels[i].numpy()] = decode_predictions(preds, top=3)[i]
 
-    # Sort the predictions by label
     sorted_predictions = sorted(predictions.items(), key=lambda item: item[0])
 
-    # Print the sorted predictions
     for label, prediction in sorted_predictions:
         class_name_and_prob = [(pred[1], pred[2]) for pred in prediction]
         print('Most predicted classes for ' + f'[{label}]' + (class_names[label]) + ':', class_name_and_prob)
