@@ -10,6 +10,7 @@ from sklearn.metrics import confusion_matrix
 import math
 import keras
 import tensorflow as tf
+from sklearn.metrics import classification_report
 
 
 def config(mode):
@@ -117,10 +118,10 @@ def create_model():
     model.add(data_augmentation)
     model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
-    model.add(keras.layers.Dropout(0.4))
-    model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu'))
+    model.add(keras.layers.Dropout(0.2))
+    model.add(keras.layers.Conv2D(filters=8, kernel_size=2, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
-    model.add(keras.layers.Dropout(0.4))
+    model.add(keras.layers.Dropout(0.3))
     model.add(keras.layers.Flatten())
     model.add(keras.layers.Dense(90, activation='softmax'))
     return model
@@ -156,6 +157,9 @@ def train_convolutions():
     plot_confusion_matrix(cm_test, title="Confusion matrix on test set")
 
     plotHistory(history)
+
+    print(classification_report(actuals_train, predictions_train))
+    print(classification_report(actuals_test, predictions_test))
 
     return None
 
@@ -205,5 +209,5 @@ val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
 test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 # show90animals()
-test_imagenet_model_on_test_data()
+# test_imagenet_model_on_test_data()
 train_convolutions()

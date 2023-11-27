@@ -38,3 +38,42 @@ def train_convolutions():
         keras.callbacks.EarlyStopping(monitor='val_loss', patience=1, restore_best_weights=True)])
 
 ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+Train accuracy: 0.2346
+Test accuracy: 0.1833
+
+def create_model():
+    resize_and_rescale = keras.Sequential([
+        keras.layers.Resizing(150, 150),
+        keras.layers.Rescaling(1. / 255)
+    ])
+
+    data_augmentation = keras.Sequential([
+        keras.layers.RandomFlip("horizontal_and_vertical"),
+        keras.layers.RandomRotation(0.2),
+    ])
+
+    model = keras.Sequential()
+    model.add(resize_and_rescale)
+    model.add(data_augmentation)
+    model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu'))
+    model.add(keras.layers.MaxPooling2D())
+    model.add(keras.layers.Dropout(0.2))
+    model.add(keras.layers.Conv2D(filters=8, kernel_size=2, activation='relu'))
+    model.add(keras.layers.MaxPooling2D())
+    model.add(keras.layers.Dropout(0.3))
+    model.add(keras.layers.Flatten())
+    model.add(keras.layers.Dense(90, activation='softmax'))
+    return model
+
+
+def train_convolutions():
+    model = create_model()
+    optimizer = keras.optimizers.Adam(learning_rate=0.00015)
+    model.compile(optimizer=optimizer,
+                  loss='sparse_categorical_crossentropy',
+                  metrics=['accuracy'])
+
+    history = model.fit(train_ds, epochs=40, validation_data=val_ds, callbacks=[
+        keras.callbacks.EarlyStopping(monitor='val_loss', patience=1, restore_best_weights=True)])
+
+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
