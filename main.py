@@ -6,22 +6,28 @@ import pathlib
 import os
 import PIL.Image
 from keras.src.applications import ResNet50
-from keras.src.applications.convnext import preprocess_input, decode_predictions
-from keras.src.regularizers import l2
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
+from keras.applications.resnet50 import preprocess_input, decode_predictions
+from sklearn.metrics import confusion_matrix
 import math
 import keras
 import tensorflow as tf
 
-# base_dir = 'C:/Users/koros/Desktop/SUNS/Zadania/Zadanie3/SUNS-Zadanie3/data'
-base_dir = 'D:/Skola/ING/SEM1/SUNS/SUNS-Zadanie3/data'
-train_dir = os.path.join(base_dir, 'train')
-test_dir = os.path.join(base_dir, 'test')
-animals_folders = list(pathlib.Path(train_dir).glob('*'))
-AUTOTUNE = tf.data.AUTOTUNE
 
-img_size = 224
-batch_size = 32
+def config(mode):
+    i_size = 224
+    b_size = 32
+
+    if mode == 'notebook':
+        base_directory = 'C:/Users/koros/Desktop/SUNS/Zadania/Zadanie3/SUNS-Zadanie3/data'
+    elif mode == 'desktop':
+        base_directory = 'D:/Skola/ING/SEM1/SUNS/SUNS-Zadanie3/data'
+    else:
+        base_directory = '/content/drive/MyDrive/data'
+    train_directory = os.path.join(base_directory, 'train')
+    test_directory = os.path.join(base_directory, 'test')
+    animal_folders = list(pathlib.Path(train_directory).glob('*'))
+
+    return i_size, b_size, base_directory, train_directory, test_directory, animal_folders
 
 
 def initialize_data():
@@ -52,16 +58,10 @@ def initialize_data():
         batch_size=batch_size)
 
     print("Class names: ")
-    class_names = train_das.class_names
-    print(class_names)
+    classes_names = train_das.class_names
+    print(classes_names)
 
-    return train_das, val_das, test_das, class_names
-
-
-train_ds, val_ds, test_ds, class_names = initialize_data()
-train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
-val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
-test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
+    return train_das, val_das, test_das, classes_names
 
 
 def show90animals():
@@ -84,7 +84,31 @@ def show90animals():
 
 
 def test_imagenet_model_on_test_data():
+    # Load the pre-trained ResNet50 model
     model = ResNet50(weights='imagenet')
+    # Dictionary to store predictions
+    predictions = {}
+
+    # Loop over the dataset
+    for images, labels in test_ds:
+        # Preprocess the images
+        x = preprocess_input(images)
+
+        # Make a prediction
+        preds = model.predict(x)
+
+        # Decode the results into a list of tuples (class, description, probability)
+        for i in range(len(preds)):
+            predictions[labels[i].numpy()] = decode_predictions(preds, top=3)[i]
+
+    # Sort the predictions by label
+    sorted_predictions = sorted(predictions.items(), key=lambda item: item[0])
+
+    # Print the sorted predictions
+    for label, prediction in sorted_predictions:
+        class_name_and_prob = [(pred[1], pred[2]) for pred in prediction]
+        print('Most predicted classes for ' + f'[{label}]' + (class_names[label]) + ':', class_name_and_prob)
+
     return None
 
 
@@ -131,27 +155,7 @@ def train_convolutions():
     cm_test = confusion_matrix(actuals_test, predictions_test)
     plot_confusion_matrix(cm_test, title="Confusion matrix on test set")
 
-    # Plot the accuracy for each epoch
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='train_accuracy')
-    plt.plot(history.history['val_accuracy'], label='val_accuracy')
-    plt.title('Accuracy/Epochs')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.legend()
-
-    # Plot the loss for each epoch
-    plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='train_loss')
-    plt.plot(history.history['val_loss'], label='val_loss')
-    plt.title('Loss/Epochs')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-
-    plt.tight_layout()
-    plt.show()
+    plotHistory(history)
 
     return None
 
@@ -166,5 +170,40 @@ def plot_confusion_matrix(cm, title):
     plt.show()
 
 
+def plotHistory(history):
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='train_accuracy')
+    plt.plot(history.history['val_accuracy'], label='val_accuracy')
+    plt.title('Accuracy/Epochs')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='train_loss')
+    plt.plot(history.history['val_loss'], label='val_loss')
+    plt.title('Loss/Epochs')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
+
+    plt.tight_layout()
+    plt.show()
+
+
+# Results -------------------------------------------------------------------------------------------------------------
+AUTOTUNE = tf.data.AUTOTUNE
+
+img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('notebook')
+# img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('desktop')
+# img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('colab')
+train_ds, val_ds, test_ds, class_names = initialize_data()
+
+train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
+val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
+
 # show90animals()
-train_convolutions()
+test_imagenet_model_on_test_data()
+# train_convolutions()
