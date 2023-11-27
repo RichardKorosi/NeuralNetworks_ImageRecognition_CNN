@@ -150,6 +150,7 @@ def train_convolutions():
 
 
 def plot_confusion_matrix(cm, title):
+
     plt.figure(figsize=(33, 13))
     sns.heatmap(cm, annot=False, cmap='viridis', xticklabels=class_names, yticklabels=class_names)
     plt.title(title, fontsize=20)
@@ -160,6 +161,7 @@ def plot_confusion_matrix(cm, title):
 
 
 def plotHistory(history):
+    
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
     plt.plot(history.history['accuracy'], label='train_accuracy')
