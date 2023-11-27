@@ -102,14 +102,25 @@ def test_imagenet_model_on_test_data():
 
 
 def create_model():
+    resize_and_rescale = keras.Sequential([
+        keras.layers.Resizing(150, 150),
+        keras.layers.Rescaling(1. / 255)
+    ])
+
+    data_augmentation = keras.Sequential([
+        keras.layers.RandomFlip("horizontal_and_vertical"),
+        keras.layers.RandomRotation(0.2),
+    ])
+
     model = keras.Sequential()
-    model.add(keras.layers.Rescaling(1. / 255, input_shape=(img_size, img_size, 3)))
-    model.add(keras.layers.Conv2D(filters=16, kernel_size=2, activation='relu'))
+    model.add(resize_and_rescale)
+    model.add(data_augmentation)
+    model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
-    model.add(keras.layers.Dropout(0.8))
-    model.add(keras.layers.Conv2D(filters=16, kernel_size=2, activation='relu'))
+    model.add(keras.layers.Dropout(0.4))
+    model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
-    model.add(keras.layers.Dropout(0.7))
+    model.add(keras.layers.Dropout(0.4))
     model.add(keras.layers.Flatten())
     model.add(keras.layers.Dense(90, activation='softmax'))
     return model
@@ -117,13 +128,13 @@ def create_model():
 
 def train_convolutions():
     model = create_model()
-    optimizer = keras.optimizers.Adam(learning_rate=0.0002)
+    optimizer = keras.optimizers.Adam(learning_rate=0.00015)
     model.compile(optimizer=optimizer,
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
 
     history = model.fit(train_ds, epochs=40, validation_data=val_ds, callbacks=[
-        keras.callbacks.EarlyStopping(monitor='val_loss', patience=0, restore_best_weights=True)])
+        keras.callbacks.EarlyStopping(monitor='val_loss', patience=1, restore_best_weights=True)])
 
     train_scores = model.evaluate(train_ds, verbose=0)
     test_scores = model.evaluate(test_ds, verbose=0)
@@ -150,7 +161,6 @@ def train_convolutions():
 
 
 def plot_confusion_matrix(cm, title):
-
     plt.figure(figsize=(33, 13))
     sns.heatmap(cm, annot=False, cmap='viridis', xticklabels=class_names, yticklabels=class_names)
     plt.title(title, fontsize=20)
@@ -161,7 +171,6 @@ def plot_confusion_matrix(cm, title):
 
 
 def plotHistory(history):
-    
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
     plt.plot(history.history['accuracy'], label='train_accuracy')
@@ -197,4 +206,4 @@ test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 # show90animals()
 test_imagenet_model_on_test_data()
-# train_convolutions()
+train_convolutions()
