@@ -4,8 +4,7 @@ import seaborn as sns
 import pathlib
 import os
 import PIL.Image
-from keras.src.applications import ResNet50
-from keras.applications.resnet50 import preprocess_input, decode_predictions
+from keras.src.applications import EfficientNetB3
 from sklearn.metrics import confusion_matrix
 import math
 import keras
@@ -14,7 +13,7 @@ from sklearn.metrics import classification_report
 
 
 def config(mode):
-    i_size = 224
+    i_size = 300
     b_size = 32
 
     if mode == 'notebook':
@@ -84,14 +83,14 @@ def show90animals():
 
 
 def test_imagenet_model_on_test_data():
-    model = ResNet50(weights='imagenet')
+    model = EfficientNetB3(weights='imagenet')
     predictions = {}
 
     for images, labels in test_ds:
-        x = preprocess_input(images)
+        x = keras.applications.efficientnet.preprocess_input(images)
         preds = model.predict(x)
         for i in range(len(preds)):
-            predictions[labels[i].numpy()] = decode_predictions(preds, top=3)[i]
+            predictions[labels[i].numpy()] = keras.applications.efficientnet.decode_predictions(preds, top=3)[i]
 
     sorted_predictions = sorted(predictions.items(), key=lambda item: item[0])
 
@@ -196,6 +195,101 @@ def plotHistory(history):
     plt.show()
 
 
+# def transfer_learning():
+#     preprocess_input = keras.applications.efficientnet.preprocess_input
+#     rescale = keras.layers.experimental.preprocessing.Rescaling(1. / 255)
+#     data_augmentation = keras.Sequential([
+#         keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
+#         keras.layers.experimental.preprocessing.RandomRotation(0.2),
+#     ])
+#     base_model = EfficientNetB3(weights='imagenet', include_top=False)
+#     image_batch, label_batch = next(iter(train_ds))
+#     feature_batch = base_model(image_batch)
+#     base_model.trainable = False
+#     base_model.summary()
+#     global_average_layer = keras.layers.GlobalAveragePooling2D()
+#     feature_batch_average = global_average_layer(feature_batch)
+#     prediction_layer = keras.layers.Dense(90, activation='softmax')
+#     prediction_batch = prediction_layer(feature_batch_average)
+#     inputs = keras.Input(shape=(300, 300, 3))
+#     x = data_augmentation(inputs)
+#     x = preprocess_input(x)
+#     x = base_model(x, training=False)
+#     x = global_average_layer(x)
+#     x = keras.layers.Dropout(0.2)(x)
+#     outputs = prediction_layer(x)
+#     model = keras.Model(inputs, outputs)
+#     model.summary()
+#     base_learning_rate = 0.0001
+#     model.compile(optimizer=keras.optimizers.Adam(learning_rate=base_learning_rate),
+#                   loss='categorical_crossentropy',
+#                   metrics=['accuracy'])
+
+#     history = model.fit(train_data=train_ds, epochs=40, validation_data=val_ds)
+
+#     plotHistory(history)
+
+#     return None
+
+def create_transfer_model():
+    preprocess_input = keras.applications.efficientnet.preprocess_input
+    data_augmentation = keras.Sequential([
+        keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
+        keras.layers.experimental.preprocessing.RandomRotation(0.2),
+    ])
+    base_model = EfficientNetB3(weights='imagenet', include_top=False)
+    base_model.trainable = False
+    global_average_layer = keras.layers.GlobalAveragePooling2D()
+    prediction_layer = keras.layers.Dense(90, activation='softmax')
+
+    inputs = keras.Input(shape=(300, 300, 3))
+    x = data_augmentation(inputs)
+    x = preprocess_input(x)
+    x = base_model(x, training=False)
+    x = global_average_layer(x)
+    x = keras.layers.Dropout(0.2)(x)
+    outputs = prediction_layer(x)
+    model = keras.Model(inputs, outputs)
+    return model
+
+
+def train_transfer_model():
+    model = create_transfer_model()
+    base_learning_rate = 0.0001
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=base_learning_rate),
+                  loss=keras.losses.SparseCategoricalCrossentropy(),
+                  metrics=['accuracy'])
+
+    history = model.fit(train_ds, epochs=40, validation_data=val_ds, callbacks=[
+        keras.callbacks.EarlyStopping(monitor='val_loss', patience=1, restore_best_weights=True)])
+
+    train_scores = model.evaluate(train_ds, verbose=0)
+    test_scores = model.evaluate(test_ds, verbose=0)
+    print(f"Train accuracy: {train_scores[1]:.4f}")
+    print(f"Test accuracy: {test_scores[1]:.4f}")
+
+    # Predictions and Confusion Matrix on Train Set
+    predictions_train = model.predict(train_ds)
+    predictions_train = np.argmax(predictions_train, axis=1)
+    actuals_train = np.concatenate([y for x, y in train_ds], axis=0)
+    cm_train = confusion_matrix(actuals_train, predictions_train)
+    plot_confusion_matrix(cm_train, title="Confusion matrix on train set")
+
+    # Predictions and Confusion Matrix on Test Set
+    predictions_test = model.predict(test_ds)
+    predictions_test = np.argmax(predictions_test, axis=1)
+    actuals_test = np.concatenate([y for x, y in test_ds], axis=0)
+    cm_test = confusion_matrix(actuals_test, predictions_test)
+    plot_confusion_matrix(cm_test, title="Confusion matrix on test set")
+
+    plotHistory(history)
+
+    print(classification_report(actuals_train, predictions_train))
+    print(classification_report(actuals_test, predictions_test))
+
+    return None
+
+
 # Results -------------------------------------------------------------------------------------------------------------
 AUTOTUNE = tf.data.AUTOTUNE
 
@@ -210,4 +304,6 @@ test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 # show90animals()
 # test_imagenet_model_on_test_data()
-train_convolutions()
+# train_convolutions()
+
+train_transfer_model()
