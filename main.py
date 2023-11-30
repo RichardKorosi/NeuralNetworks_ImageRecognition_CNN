@@ -1,15 +1,19 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
+import pandas as pd
+import gc
 import pathlib
 import os
 import PIL.Image
 from keras.src.applications import EfficientNetB3
+from keras.src.preprocessing.image import ImageDataGenerator
 from sklearn.metrics import confusion_matrix
 import math
 import keras
 import tensorflow as tf
 from sklearn.metrics import classification_report
+from tqdm import tqdm
 
 
 def config(mode):
@@ -90,13 +94,13 @@ def test_imagenet_model_on_test_data():
         x = keras.applications.efficientnet.preprocess_input(images)
         preds = model.predict(x)
         for i in range(len(preds)):
-            predictions[labels[i].numpy()] = keras.applications.efficientnet.decode_predictions(preds, top=3)[i]
+            predictions[labels[i].numpy()] = keras.applications.efficientnet.decode_predictions(preds, top=2)[i]
 
     sorted_predictions = sorted(predictions.items(), key=lambda item: item[0])
 
     for label, prediction in sorted_predictions:
         class_name_and_prob = [(pred[1], pred[2]) for pred in prediction]
-        print('Most predicted classes for ' + f'[{label}]' + (class_names[label]) + ':', class_name_and_prob)
+        print(f'[{label}]' + (class_names[label]) + ':', class_name_and_prob)
 
     return None
 
@@ -195,42 +199,6 @@ def plotHistory(history):
     plt.show()
 
 
-# def transfer_learning():
-#     preprocess_input = keras.applications.efficientnet.preprocess_input
-#     rescale = keras.layers.experimental.preprocessing.Rescaling(1. / 255)
-#     data_augmentation = keras.Sequential([
-#         keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
-#         keras.layers.experimental.preprocessing.RandomRotation(0.2),
-#     ])
-#     base_model = EfficientNetB3(weights='imagenet', include_top=False)
-#     image_batch, label_batch = next(iter(train_ds))
-#     feature_batch = base_model(image_batch)
-#     base_model.trainable = False
-#     base_model.summary()
-#     global_average_layer = keras.layers.GlobalAveragePooling2D()
-#     feature_batch_average = global_average_layer(feature_batch)
-#     prediction_layer = keras.layers.Dense(90, activation='softmax')
-#     prediction_batch = prediction_layer(feature_batch_average)
-#     inputs = keras.Input(shape=(300, 300, 3))
-#     x = data_augmentation(inputs)
-#     x = preprocess_input(x)
-#     x = base_model(x, training=False)
-#     x = global_average_layer(x)
-#     x = keras.layers.Dropout(0.2)(x)
-#     outputs = prediction_layer(x)
-#     model = keras.Model(inputs, outputs)
-#     model.summary()
-#     base_learning_rate = 0.0001
-#     model.compile(optimizer=keras.optimizers.Adam(learning_rate=base_learning_rate),
-#                   loss='categorical_crossentropy',
-#                   metrics=['accuracy'])
-
-#     history = model.fit(train_data=train_ds, epochs=40, validation_data=val_ds)
-
-#     plotHistory(history)
-
-#     return None
-
 def create_transfer_model():
     preprocess_input = keras.applications.efficientnet.preprocess_input
     data_augmentation = keras.Sequential([
@@ -290,6 +258,43 @@ def train_transfer_model():
     return None
 
 
+def createDataset():
+    # Load the EfficientNetB3 network, ensuring the head FC layer sets are left off
+    model = EfficientNetB3(weights="imagenet", include_top=False)
+
+    # Initialize our dataframe
+    df = pd.DataFrame(columns=["pathOfImage", "actualClass"] + [f"feature_{i}" for i in range(model.output_shape[-1])])
+
+    # List of directories to iterate over
+    directories = [os.path.join(base_dir, 'train'), os.path.join(base_dir, 'test')]
+
+    for directory in directories:
+        for folder in os.listdir(directory):
+            folder_path = os.path.join(directory, folder)
+            if os.path.isdir(folder_path):  # Check if the path is a directory
+                for filename in os.listdir(folder_path):
+                    # Load and preprocess the image
+                    img_path = os.path.join(folder_path, filename).replace("\\", "/")
+                    img = keras.preprocessing.image.load_img(img_path, target_size=(img_size, img_size))
+                    x = keras.preprocessing.image.img_to_array(img)
+                    x = np.expand_dims(x, axis=0)
+                    x = keras.applications.efficientnet.preprocess_input(x)
+
+                    # Generate features
+                    features = model.predict(x)
+
+                    # Flatten the 2D array to a 1D array
+                    features = features.flatten()
+
+                    # Save the image path, actual class, and features to the dataframe
+                    data = {"pathOfImage": img_path, "actualClass": os.path.basename(folder)}
+                    data.update({f"feature_{i}": feature for i, feature in enumerate(features)})
+                    df.loc[len(df)] = data
+
+    # Save the dataframe to a CSV file
+    df.to_csv("dataset1.csv", index=False)
+    return df
+
 # Results -------------------------------------------------------------------------------------------------------------
 AUTOTUNE = tf.data.AUTOTUNE
 
@@ -302,8 +307,9 @@ train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
 val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
 test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
+createDataset()
+
 # show90animals()
 # test_imagenet_model_on_test_data()
 # train_convolutions()
-
-train_transfer_model()
+# train_transfer_model()
