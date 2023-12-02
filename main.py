@@ -2,22 +2,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 import seaborn as sns
 import pandas as pd
-import gc
 import pathlib
 import os
 import PIL.Image
-from keras.src.applications import EfficientNetB3
-from keras.src.preprocessing.image import ImageDataGenerator
+from keras.src.applications import EfficientNetB4
+from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 import math
 import keras
 import tensorflow as tf
 from sklearn.metrics import classification_report
-from tqdm import tqdm
+from sklearn.cluster import KMeans
+from sklearn.preprocessing import StandardScaler
 
 
 def config(mode):
-    i_size = 300
+    i_size = 380
     b_size = 32
 
     if mode == 'notebook':
@@ -87,7 +87,7 @@ def show90animals():
 
 
 def test_imagenet_model_on_test_data():
-    model = EfficientNetB3(weights='imagenet')
+    model = EfficientNetB4(weights='imagenet')
     predictions = {}
 
     for images, labels in test_ds:
@@ -205,7 +205,7 @@ def create_transfer_model():
         keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
         keras.layers.experimental.preprocessing.RandomRotation(0.2),
     ])
-    base_model = EfficientNetB3(weights='imagenet', include_top=False)
+    base_model = EfficientNetB4(weights='imagenet', include_top=False)
     base_model.trainable = False
     global_average_layer = keras.layers.GlobalAveragePooling2D()
     prediction_layer = keras.layers.Dense(90, activation='softmax')
@@ -260,7 +260,7 @@ def train_transfer_model():
 
 def createDataset():
     # Load the EfficientNetB3 network, ensuring the head FC layer sets are left off
-    model = EfficientNetB3(weights="imagenet", include_top=False)
+    model = EfficientNetB4(weights="imagenet", include_top=False)
 
     # Initialize our dataframe
     df = pd.DataFrame(columns=["pathOfImage", "actualClass"] + [f"feature_{i}" for i in range(model.output_shape[-1])])
@@ -276,6 +276,7 @@ def createDataset():
                     # Load and preprocess the image
                     img_path = os.path.join(folder_path, filename).replace("\\", "/")
                     img = keras.preprocessing.image.load_img(img_path, target_size=(img_size, img_size))
+                    img_path = "data" + img_path.split("data", 1)[1]
                     x = keras.preprocessing.image.img_to_array(img)
                     x = np.expand_dims(x, axis=0)
                     x = keras.applications.efficientnet.preprocess_input(x)
@@ -295,21 +296,114 @@ def createDataset():
     df.to_csv("dataset1.csv", index=False)
     return df
 
+
+def clusterDataset():
+    # Load the dataset
+    df = pd.read_csv("dataset1.csv")
+
+    # Extract the features from the dataframe
+    features = df[[f"feature_{i}" for i in range(1792)]].values
+
+    pca = PCA(n_components=5, random_state=71)
+    features_pca = pca.fit_transform(features)
+
+    kmeans = KMeans(n_clusters=35, n_init='auto', random_state=71).fit(features_pca)
+
+    df['cluster'] = kmeans.labels_
+
+    # Save the dataframe to a CSV file
+    df.to_csv("dataset2.csv", index=False)
+    return df
+
+
+def show_cluster_images():
+    df = pd.read_csv("dataset2.csv")
+    clusters = df['cluster'].unique()
+
+    # Print the number of units in each cluster
+    cluster_counts = df['cluster'].value_counts()
+    print(cluster_counts)
+
+    for cluster in clusters:
+        # Get the maximum of 25 or the total number of entries in the current cluster
+        sample_size = min(30, df[df['cluster'] == cluster].shape[0])
+        cluster_images = df[df['cluster'] == cluster].sample(sample_size)
+
+        if df[df['cluster'] == cluster].shape[0] > 10:
+
+            fig = plt.figure(figsize=(15, 15))  # Define the figure size
+
+            for i, row in enumerate(cluster_images.iterrows()):
+                _, row_data = row
+                im = PIL.Image.open(row_data['pathOfImage'])
+
+                ax = fig.add_subplot(5, 6, i + 1)  # Add a subplot for each image
+                ax.imshow(im)
+                ax.axis('off')  # Hide axes
+                ax.set_title(f'Cluster {cluster}')
+
+            plt.show()
+    return None
+
+
+def show_average_images():
+    df = pd.read_csv("dataset2.csv")
+    clusters = df['cluster'].unique()
+
+    # Calculate the grid size based on the number of clusters
+    grid_size = math.ceil(math.sqrt(len(clusters)))
+
+    fig, axs = plt.subplots(grid_size, grid_size, figsize=(15, 15))
+
+    for i, cluster in enumerate(clusters):
+        # Get all images in the current cluster
+        cluster_images = df[df['cluster'] == cluster]['pathOfImage']
+
+        # Initialize an empty list to store the images
+        images = []
+        # Read each image, convert to numpy array and append to the list
+        for image_path in cluster_images:
+            im = PIL.Image.open(image_path)
+            im = im.resize((50, 50))  # Resize the image
+            im_array = np.array(im)
+            images.append(im_array)
+
+        # Calculate the average image
+        avg_image = np.mean(images, axis=0)
+
+        # Display the average image in a subplot
+        ax = axs[i // grid_size, i % grid_size]
+        ax.imshow(avg_image.astype(np.uint8))
+        ax.axis('off')  # Hide axes
+        ax.set_title(f'Cluster {cluster}')
+
+    # Remove unused subplots
+    for j in range(i+1, grid_size*grid_size):
+        fig.delaxes(axs.flatten()[j])
+
+    plt.tight_layout()
+    plt.show()
+
+    return None
+
+
 # Results -------------------------------------------------------------------------------------------------------------
 AUTOTUNE = tf.data.AUTOTUNE
 
-img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('notebook')
+# img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('notebook')
 # img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('desktop')
 # img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('colab')
-train_ds, val_ds, test_ds, class_names = initialize_data()
+# train_ds, val_ds, test_ds, class_names = initialize_data()
 
-train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
-val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
-test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
-
-createDataset()
+# train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
+# val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+# test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 # show90animals()
 # test_imagenet_model_on_test_data()
 # train_convolutions()
 # train_transfer_model()
+# createDataset()
+clusterDataset()
+show_cluster_images()
+show_average_images()
