@@ -13,7 +13,7 @@ import keras
 import tensorflow as tf
 from sklearn.metrics import classification_report
 from sklearn.cluster import KMeans
-from sklearn.preprocessing import StandardScaler
+from collections import Counter
 
 
 def config(mode):
@@ -88,19 +88,28 @@ def show90animals():
 
 def test_imagenet_model_on_test_data():
     model = EfficientNetB4(weights='imagenet')
-    predictions = {}
+    label_predictions = {}
 
-    for images, labels in test_ds:
+    for images, labels in train_ds:
         x = keras.applications.efficientnet.preprocess_input(images)
         preds = model.predict(x)
         for i in range(len(preds)):
-            predictions[labels[i].numpy()] = keras.applications.efficientnet.decode_predictions(preds, top=2)[i]
+            label = class_names[labels[i].numpy()]  # Get the class name corresponding to the label
+            decoded_preds = keras.applications.efficientnet.decode_predictions(preds, top=3)[i]
+            top_prediction = decoded_preds[0][1]  # Get the class name of the top prediction
+            if label not in label_predictions:
+                label_predictions[label] = []
+            label_predictions[label].append(top_prediction)
 
-    sorted_predictions = sorted(predictions.items(), key=lambda item: item[0])
+    # Convert the dictionary to a list of tuples and sort it
+    sorted_label_predictions = sorted(label_predictions.items(), key=lambda item: item[0])
 
-    for label, prediction in sorted_predictions:
-        class_name_and_prob = [(pred[1], pred[2]) for pred in prediction]
-        print(f'[{label}]' + (class_names[label]) + ':', class_name_and_prob)
+    for label, predictions in sorted_label_predictions:
+        counter = Counter(predictions)
+        total_predictions = len(predictions)
+        most_common_predictions = counter.most_common(3)  # Get the two most common predictions
+        most_common_predictions_percentages = [(pred[0], round(pred[1] / total_predictions, 2)) for pred in most_common_predictions]
+        print(f'{label}: {most_common_predictions_percentages}')
 
     return None
 
@@ -378,7 +387,7 @@ def show_average_images():
         ax.set_title(f'Cluster {cluster}')
 
     # Remove unused subplots
-    for j in range(i+1, grid_size*grid_size):
+    for j in range(i + 1, grid_size * grid_size):
         fig.delaxes(axs.flatten()[j])
 
     plt.tight_layout()
@@ -390,20 +399,20 @@ def show_average_images():
 # Results -------------------------------------------------------------------------------------------------------------
 AUTOTUNE = tf.data.AUTOTUNE
 
-# img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('notebook')
+img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('notebook')
 # img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('desktop')
 # img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('colab')
-# train_ds, val_ds, test_ds, class_names = initialize_data()
+train_ds, val_ds, test_ds, class_names = initialize_data()
 
-# train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
-# val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
-# test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
+train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
+val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
+test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 # show90animals()
-# test_imagenet_model_on_test_data()
+test_imagenet_model_on_test_data()
 # train_convolutions()
 # train_transfer_model()
 # createDataset()
-clusterDataset()
-show_cluster_images()
-show_average_images()
+# clusterDataset()
+# show_cluster_images()
+# show_average_images()
