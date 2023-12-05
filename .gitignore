@@ -188,3 +188,6 @@ data/__MACOSX/train/._zebra
 *.xml
 .idea/misc.xml
 .idea/SUNS-Zadanie3.iml
+dataset1.csv
+*.csv
+*.csv
