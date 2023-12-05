@@ -15,6 +15,7 @@ from sklearn.metrics import classification_report
 from sklearn.cluster import KMeans
 from collections import Counter
 
+
 # ZDROJE KU KODOM ------------------------------------------------------------------------------------------------------
 # ======================================================================================================================
 # Zdrojove kody z cviceni (dostupne na dokumentovom serveri AIS):
@@ -33,9 +34,6 @@ from collections import Counter
 # https://www.tensorflow.org/tutorials/images/data_augmentation [4]
 # Predosle Zadania (1,2), zdroje sú dostupné v nich [5]
 # ======================================================================================================================
-
-
-# Exercise functions --------------------------------------------------------------------------------------------------
 
 def initialize_data():
     # Tato funkcia bola inspirovana zdrojovim kodom generators.py a [1] (vid. ZDROJE KU KODOM)
@@ -330,8 +328,6 @@ def train_transfer_model():
     return None
 
 
-# Helper functions ----------------------------------------------------------------------------------------------------
-
 def config(mode):
     # Tato funkcia bola inspirovana zdrojovim kodom generators.py (vid. ZDROJE KU KODOM)
     i_size = 380
@@ -379,7 +375,6 @@ def create_augmented_cnn_model():
     return model
 
 
-# Plot functions ------------------------------------------------------------------------------------------------------
 def plot_confusion_matrix(cm, title):
     # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
     plt.figure(figsize=(33, 13))
@@ -418,7 +413,6 @@ def plotHistory(history):
     return None
 
 
-# Results -------------------------------------------------------------------------------------------------------------
 AUTOTUNE = tf.data.AUTOTUNE
 
 img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('notebook')
