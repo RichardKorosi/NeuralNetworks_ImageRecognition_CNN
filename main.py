@@ -15,10 +15,30 @@ from sklearn.metrics import classification_report
 from sklearn.cluster import KMeans
 from collections import Counter
 
+# ZDROJE KU KODOM ------------------------------------------------------------------------------------------------------
+# ======================================================================================================================
+# Zdrojove kody z cviceni (dostupne na dokumentovom serveri AIS):
+#   Autor: Ing. Vanesa Andicsová
+#   Subory:
+#       generators.py
+# ======================================================================================================================
+# Grafy, Pomocne funkcie, Casti funkcii...:
+#  Autor/Spoluautor: Github Copilot, ChatGPT
+#  Grafy, pomocne funkcie a casti funkcii boli vypracoavane za pomoci Github Copilota a ChatGPT
+# ======================================================================================================================
+# Ostatne zdroje:
+# https://www.tensorflow.org/tutorials/load_data/images [1]
+# https://www.tensorflow.org/tensorboard/get_started [2]
+# https://www.tensorflow.org/tutorials/images/transfer_learning [3]
+# https://www.tensorflow.org/tutorials/images/data_augmentation [4]
+# Predosle Zadania (1,2), zdroje sú dostupné v nich [5]
+# ======================================================================================================================
+
 
 # Exercise functions --------------------------------------------------------------------------------------------------
 
 def initialize_data():
+    # Tato funkcia bola inspirovana zdrojovim kodom generators.py a [1] (vid. ZDROJE KU KODOM)
     print("Train data: ")
     train_das = keras.utils.image_dataset_from_directory(
         train_dir,
@@ -53,18 +73,19 @@ def initialize_data():
 
 
 def show90animals():
-    # Calculate the grid size based on the number of animal folders
+    # Tato funkcia bola inspirovana zdrojovim kodom generators.py (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     grid_size = math.ceil(math.sqrt(len(animals_folders)))
 
-    fig = plt.figure(figsize=(15, 15))  # Define the figure size
+    fig = plt.figure(figsize=(15, 15))
 
     for i, animal_folder in enumerate(animals_folders):
         animal_images = list(animal_folder.glob('*'))
         im = PIL.Image.open(str(animal_images[0]))
 
-        ax = fig.add_subplot(grid_size, grid_size, i + 1)  # Add a subplot for each image
+        ax = fig.add_subplot(grid_size, grid_size, i + 1)
         ax.imshow(im)
-        ax.axis('off')  # Hide axes
+        ax.axis('off')
         ax.set_title(class_names[i])
 
     plt.show()
@@ -72,6 +93,7 @@ def show90animals():
 
 
 def test_imagenet_model_on_test_data():
+    # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     model = EfficientNetB4(weights='imagenet')
     label_predictions = {}
 
@@ -79,20 +101,19 @@ def test_imagenet_model_on_test_data():
         x = keras.applications.efficientnet.preprocess_input(images)
         preds = model.predict(x)
         for i in range(len(preds)):
-            label = class_names[labels[i].numpy()]  # Get the class name corresponding to the label
+            label = class_names[labels[i].numpy()]
             decoded_preds = keras.applications.efficientnet.decode_predictions(preds, top=3)[i]
-            top_prediction = decoded_preds[0][1]  # Get the class name of the top prediction
+            top_prediction = decoded_preds[0][1]
             if label not in label_predictions:
                 label_predictions[label] = []
             label_predictions[label].append(top_prediction)
 
-    # Convert the dictionary to a list of tuples and sort it
     sorted_label_predictions = sorted(label_predictions.items(), key=lambda item: item[0])
 
     for label, predictions in sorted_label_predictions:
         counter = Counter(predictions)
         total_predictions = len(predictions)
-        most_common_predictions = counter.most_common(3)  # Get the two most common predictions
+        most_common_predictions = counter.most_common(3)
         most_common_predictions_percentages = [(pred[0], round(pred[1] / total_predictions, 2)) for pred in
                                                most_common_predictions]
         print(f'{label}: {most_common_predictions_percentages}')
@@ -101,6 +122,8 @@ def test_imagenet_model_on_test_data():
 
 
 def train_convolutions():
+    # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     model = create_augmented_cnn_model()
     optimizer = keras.optimizers.Adam(learning_rate=0.0001)
 
@@ -116,14 +139,12 @@ def train_convolutions():
     print(f"Train accuracy: {train_scores[1]:.4f}")
     print(f"Test accuracy: {test_scores[1]:.4f}")
 
-    # Predictions and Confusion Matrix on Train Set
     predictions_train = model.predict(train_ds)
     predictions_train = np.argmax(predictions_train, axis=1)
     actuals_train = np.concatenate([y for x, y in train_ds], axis=0)
     cm_train = confusion_matrix(actuals_train, predictions_train)
     plot_confusion_matrix(cm_train, title="Confusion matrix on train set")
 
-    # Predictions and Confusion Matrix on Test Set
     predictions_test = model.predict(test_ds)
     predictions_test = np.argmax(predictions_test, axis=1)
     actuals_test = np.concatenate([y for x, y in test_ds], axis=0)
@@ -136,21 +157,18 @@ def train_convolutions():
 
 
 def createDataset():
-    # Load the EfficientNetB3 network, ensuring the head FC layer sets are left off
+    # Tato funkcia bola vypracovana za pomoci Github Copilota a ChatGPT (vid. ZDROJE KU KODOM)
     model = EfficientNetB4(weights="imagenet", include_top=False)
 
-    # Initialize our dataframe
     df = pd.DataFrame(columns=["pathOfImage", "actualClass"] + [f"feature_{i}" for i in range(model.output_shape[-1])])
 
-    # List of directories to iterate over
     directories = [os.path.join(base_dir, 'train'), os.path.join(base_dir, 'test')]
 
     for directory in directories:
         for folder in os.listdir(directory):
             folder_path = os.path.join(directory, folder)
-            if os.path.isdir(folder_path):  # Check if the path is a directory
+            if os.path.isdir(folder_path):
                 for filename in os.listdir(folder_path):
-                    # Load and preprocess the image
                     img_path = os.path.join(folder_path, filename).replace("\\", "/")
                     img = keras.preprocessing.image.load_img(img_path, target_size=(img_size, img_size))
                     img_path = "data" + img_path.split("data", 1)[1]
@@ -158,27 +176,22 @@ def createDataset():
                     x = np.expand_dims(x, axis=0)
                     x = keras.applications.efficientnet.preprocess_input(x)
 
-                    # Generate features
                     features = model.predict(x)
 
-                    # Flatten the 2D array to a 1D array
                     features = features.flatten()
 
-                    # Save the image path, actual class, and features to the dataframe
                     data = {"pathOfImage": img_path, "actualClass": os.path.basename(folder)}
                     data.update({f"feature_{i}": feature for i, feature in enumerate(features)})
                     df.loc[len(df)] = data
 
-    # Save the dataframe to a CSV file
     df.to_csv("dataset1.csv", index=False)
     return df
 
 
 def clusterDataset():
-    # Load the dataset
+    # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     df = pd.read_csv("dataset1.csv")
 
-    # Extract the features from the dataframe
     features = df[[f"feature_{i}" for i in range(1792)]].values
 
     pca = PCA(n_components=5, random_state=71)
@@ -188,35 +201,33 @@ def clusterDataset():
 
     df['cluster'] = kmeans.labels_
 
-    # Save the dataframe to a CSV file
     df.to_csv("dataset2.csv", index=False)
     return df
 
 
 def show_cluster_images():
+    # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     df = pd.read_csv("dataset2.csv")
     clusters = df['cluster'].unique()
 
-    # Print the number of units in each cluster
     cluster_counts = df['cluster'].value_counts()
     print(cluster_counts)
 
     for cluster in clusters:
-        # Get the maximum of 25 or the total number of entries in the current cluster
         sample_size = min(30, df[df['cluster'] == cluster].shape[0])
         cluster_images = df[df['cluster'] == cluster].sample(sample_size)
 
         if df[df['cluster'] == cluster].shape[0] > 10:
 
-            fig = plt.figure(figsize=(15, 15))  # Define the figure size
+            fig = plt.figure(figsize=(15, 15))
 
             for i, row in enumerate(cluster_images.iterrows()):
                 _, row_data = row
                 im = PIL.Image.open(row_data['pathOfImage'])
 
-                ax = fig.add_subplot(5, 6, i + 1)  # Add a subplot for each image
+                ax = fig.add_subplot(5, 6, i + 1)
                 ax.imshow(im)
-                ax.axis('off')  # Hide axes
+                ax.axis('off')
                 ax.set_title(f'Cluster {cluster}')
 
             plt.show()
@@ -224,37 +235,31 @@ def show_cluster_images():
 
 
 def show_average_images():
+    # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     df = pd.read_csv("dataset2.csv")
     clusters = df['cluster'].unique()
 
-    # Calculate the grid size based on the number of clusters
     grid_size = math.ceil(math.sqrt(len(clusters)))
 
     fig, axs = plt.subplots(grid_size, grid_size, figsize=(15, 15))
 
     for i, cluster in enumerate(clusters):
-        # Get all images in the current cluster
         cluster_images = df[df['cluster'] == cluster]['pathOfImage']
 
-        # Initialize an empty list to store the images
         images = []
-        # Read each image, convert to numpy array and append to the list
         for image_path in cluster_images:
             im = PIL.Image.open(image_path)
-            im = im.resize((50, 50))  # Resize the image
+            im = im.resize((50, 50))
             im_array = np.array(im)
             images.append(im_array)
 
-        # Calculate the average image
         avg_image = np.mean(images, axis=0)
 
-        # Display the average image in a subplot
         ax = axs[i // grid_size, i % grid_size]
         ax.imshow(avg_image.astype(np.uint8))
-        ax.axis('off')  # Hide axes
+        ax.axis('off')
         ax.set_title(f'Cluster {cluster}')
 
-    # Remove unused subplots
     for j in range(i + 1, grid_size * grid_size):
         fig.delaxes(axs.flatten()[j])
 
@@ -287,6 +292,8 @@ def create_transfer_model():
 
 
 def train_transfer_model():
+    # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     model = create_transfer_model()
     base_learning_rate = 0.0001
     model.compile(optimizer=keras.optimizers.Adam(learning_rate=base_learning_rate),
@@ -326,6 +333,7 @@ def train_transfer_model():
 # Helper functions ----------------------------------------------------------------------------------------------------
 
 def config(mode):
+    # Tato funkcia bola inspirovana zdrojovim kodom generators.py (vid. ZDROJE KU KODOM)
     i_size = 380
     b_size = 32
 
@@ -343,6 +351,9 @@ def config(mode):
 
 
 def create_augmented_cnn_model():
+    # Tato funkcia bola inspirovana zdrojovim kodom a navodom [1] a [4] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
+
     img_size_for_my_model = 150
     resize_and_rescale = keras.Sequential([
         keras.layers.Resizing(img_size_for_my_model, img_size_for_my_model),
@@ -359,7 +370,7 @@ def create_augmented_cnn_model():
     model.add(data_augmentation)
     model.add(keras.layers.Conv2D(filters=16, kernel_size=3, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
-    model.add(keras.layers.Dropout(0.2))
+    model.add(keras.layers.Dropout(0.4))
     model.add(keras.layers.Conv2D(filters=16, kernel_size=3, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
     model.add(keras.layers.Dropout(0.3))
@@ -370,6 +381,7 @@ def create_augmented_cnn_model():
 
 # Plot functions ------------------------------------------------------------------------------------------------------
 def plot_confusion_matrix(cm, title):
+    # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
     plt.figure(figsize=(33, 13))
     sns.heatmap(cm, annot=False, cmap='viridis', xticklabels=class_names, yticklabels=class_names)
     plt.title(title, fontsize=20)
@@ -382,6 +394,7 @@ def plot_confusion_matrix(cm, title):
 
 
 def plotHistory(history):
+    # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
     plt.plot(history.history['accuracy'], label='train_accuracy')
