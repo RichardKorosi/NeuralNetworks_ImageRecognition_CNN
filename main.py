@@ -16,22 +16,7 @@ from sklearn.cluster import KMeans
 from collections import Counter
 
 
-def config(mode):
-    i_size = 380
-    b_size = 32
-
-    if mode == 'notebook':
-        base_directory = 'C:/Users/koros/Desktop/SUNS/Zadania/Zadanie3/SUNS-Zadanie3/data'
-    elif mode == 'desktop':
-        base_directory = 'D:/Skola/ING/SEM1/SUNS/SUNS-Zadanie3/data'
-    else:
-        base_directory = '/content/drive/MyDrive/data'
-    train_directory = os.path.join(base_directory, 'train')
-    test_directory = os.path.join(base_directory, 'test')
-    animal_folders = list(pathlib.Path(train_directory).glob('*'))
-
-    return i_size, b_size, base_directory, train_directory, test_directory, animal_folders
-
+# Exercise functions --------------------------------------------------------------------------------------------------
 
 def initialize_data():
     print("Train data: ")
@@ -108,40 +93,17 @@ def test_imagenet_model_on_test_data():
         counter = Counter(predictions)
         total_predictions = len(predictions)
         most_common_predictions = counter.most_common(3)  # Get the two most common predictions
-        most_common_predictions_percentages = [(pred[0], round(pred[1] / total_predictions, 2)) for pred in most_common_predictions]
+        most_common_predictions_percentages = [(pred[0], round(pred[1] / total_predictions, 2)) for pred in
+                                               most_common_predictions]
         print(f'{label}: {most_common_predictions_percentages}')
 
     return None
 
 
-def create_model():
-    resize_and_rescale = keras.Sequential([
-        keras.layers.Resizing(150, 150),
-        keras.layers.Rescaling(1. / 255)
-    ])
-
-    data_augmentation = keras.Sequential([
-        keras.layers.RandomFlip("horizontal_and_vertical"),
-        keras.layers.RandomRotation(0.2),
-    ])
-
-    model = keras.Sequential()
-    model.add(resize_and_rescale)
-    model.add(data_augmentation)
-    model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu'))
-    model.add(keras.layers.MaxPooling2D())
-    model.add(keras.layers.Dropout(0.2))
-    model.add(keras.layers.Conv2D(filters=8, kernel_size=2, activation='relu'))
-    model.add(keras.layers.MaxPooling2D())
-    model.add(keras.layers.Dropout(0.3))
-    model.add(keras.layers.Flatten())
-    model.add(keras.layers.Dense(90, activation='softmax'))
-    return model
-
-
 def train_convolutions():
-    model = create_model()
+    model = create_augmented_cnn_model()
     optimizer = keras.optimizers.Adam(learning_rate=0.00015)
+
     model.compile(optimizer=optimizer,
                   loss='sparse_categorical_crossentropy',
                   metrics=['accuracy'])
@@ -169,100 +131,6 @@ def train_convolutions():
     plot_confusion_matrix(cm_test, title="Confusion matrix on test set")
 
     plotHistory(history)
-
-    print(classification_report(actuals_train, predictions_train))
-    print(classification_report(actuals_test, predictions_test))
-
-    return None
-
-
-def plot_confusion_matrix(cm, title):
-    plt.figure(figsize=(33, 13))
-    sns.heatmap(cm, annot=False, cmap='viridis', xticklabels=class_names, yticklabels=class_names)
-    plt.title(title, fontsize=20)
-    plt.xticks(rotation=60)
-    plt.tick_params(axis='x', labelsize=10)
-    plt.tick_params(axis='y', labelsize=10)
-    plt.show()
-
-
-def plotHistory(history):
-    plt.figure(figsize=(12, 6))
-    plt.subplot(1, 2, 1)
-    plt.plot(history.history['accuracy'], label='train_accuracy')
-    plt.plot(history.history['val_accuracy'], label='val_accuracy')
-    plt.title('Accuracy/Epochs')
-    plt.xlabel('Epoch')
-    plt.ylabel('Accuracy')
-    plt.legend()
-
-    plt.subplot(1, 2, 2)
-    plt.plot(history.history['loss'], label='train_loss')
-    plt.plot(history.history['val_loss'], label='val_loss')
-    plt.title('Loss/Epochs')
-    plt.xlabel('Epoch')
-    plt.ylabel('Loss')
-    plt.legend()
-
-    plt.tight_layout()
-    plt.show()
-
-
-def create_transfer_model():
-    preprocess_input = keras.applications.efficientnet.preprocess_input
-    data_augmentation = keras.Sequential([
-        keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
-        keras.layers.experimental.preprocessing.RandomRotation(0.2),
-    ])
-    base_model = EfficientNetB4(weights='imagenet', include_top=False)
-    base_model.trainable = False
-    global_average_layer = keras.layers.GlobalAveragePooling2D()
-    prediction_layer = keras.layers.Dense(90, activation='softmax')
-
-    inputs = keras.Input(shape=(300, 300, 3))
-    x = data_augmentation(inputs)
-    x = preprocess_input(x)
-    x = base_model(x, training=False)
-    x = global_average_layer(x)
-    x = keras.layers.Dropout(0.2)(x)
-    outputs = prediction_layer(x)
-    model = keras.Model(inputs, outputs)
-    return model
-
-
-def train_transfer_model():
-    model = create_transfer_model()
-    base_learning_rate = 0.0001
-    model.compile(optimizer=keras.optimizers.Adam(learning_rate=base_learning_rate),
-                  loss=keras.losses.SparseCategoricalCrossentropy(),
-                  metrics=['accuracy'])
-
-    history = model.fit(train_ds, epochs=40, validation_data=val_ds, callbacks=[
-        keras.callbacks.EarlyStopping(monitor='val_loss', patience=1, restore_best_weights=True)])
-
-    train_scores = model.evaluate(train_ds, verbose=0)
-    test_scores = model.evaluate(test_ds, verbose=0)
-    print(f"Train accuracy: {train_scores[1]:.4f}")
-    print(f"Test accuracy: {test_scores[1]:.4f}")
-
-    # Predictions and Confusion Matrix on Train Set
-    predictions_train = model.predict(train_ds)
-    predictions_train = np.argmax(predictions_train, axis=1)
-    actuals_train = np.concatenate([y for x, y in train_ds], axis=0)
-    cm_train = confusion_matrix(actuals_train, predictions_train)
-    plot_confusion_matrix(cm_train, title="Confusion matrix on train set")
-
-    # Predictions and Confusion Matrix on Test Set
-    predictions_test = model.predict(test_ds)
-    predictions_test = np.argmax(predictions_test, axis=1)
-    actuals_test = np.concatenate([y for x, y in test_ds], axis=0)
-    cm_test = confusion_matrix(actuals_test, predictions_test)
-    plot_confusion_matrix(cm_test, title="Confusion matrix on test set")
-
-    plotHistory(history)
-
-    print(classification_report(actuals_train, predictions_train))
-    print(classification_report(actuals_test, predictions_test))
 
     return None
 
@@ -389,6 +257,146 @@ def show_average_images():
     # Remove unused subplots
     for j in range(i + 1, grid_size * grid_size):
         fig.delaxes(axs.flatten()[j])
+
+    plt.tight_layout()
+    plt.show()
+
+    return None
+
+
+def create_transfer_model():
+    preprocess_input = keras.applications.efficientnet.preprocess_input
+    data_augmentation = keras.Sequential([
+        keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
+        keras.layers.experimental.preprocessing.RandomRotation(0.2),
+    ])
+    base_model = EfficientNetB4(weights='imagenet', include_top=False)
+    base_model.trainable = False
+    global_average_layer = keras.layers.GlobalAveragePooling2D()
+    prediction_layer = keras.layers.Dense(90, activation='softmax')
+
+    inputs = keras.Input(shape=(300, 300, 3))
+    x = data_augmentation(inputs)
+    x = preprocess_input(x)
+    x = base_model(x, training=False)
+    x = global_average_layer(x)
+    x = keras.layers.Dropout(0.2)(x)
+    outputs = prediction_layer(x)
+    model = keras.Model(inputs, outputs)
+    return model
+
+
+def train_transfer_model():
+    model = create_transfer_model()
+    base_learning_rate = 0.0001
+    model.compile(optimizer=keras.optimizers.Adam(learning_rate=base_learning_rate),
+                  loss=keras.losses.SparseCategoricalCrossentropy(),
+                  metrics=['accuracy'])
+
+    history = model.fit(train_ds, epochs=40, validation_data=val_ds, callbacks=[
+        keras.callbacks.EarlyStopping(monitor='val_loss', patience=1, restore_best_weights=True)])
+
+    train_scores = model.evaluate(train_ds, verbose=0)
+    test_scores = model.evaluate(test_ds, verbose=0)
+    print(f"Train accuracy: {train_scores[1]:.4f}")
+    print(f"Test accuracy: {test_scores[1]:.4f}")
+
+    # Predictions and Confusion Matrix on Train Set
+    predictions_train = model.predict(train_ds)
+    predictions_train = np.argmax(predictions_train, axis=1)
+    actuals_train = np.concatenate([y for x, y in train_ds], axis=0)
+    cm_train = confusion_matrix(actuals_train, predictions_train)
+    plot_confusion_matrix(cm_train, title="Confusion matrix on train set")
+
+    # Predictions and Confusion Matrix on Test Set
+    predictions_test = model.predict(test_ds)
+    predictions_test = np.argmax(predictions_test, axis=1)
+    actuals_test = np.concatenate([y for x, y in test_ds], axis=0)
+    cm_test = confusion_matrix(actuals_test, predictions_test)
+    plot_confusion_matrix(cm_test, title="Confusion matrix on test set")
+
+    plotHistory(history)
+
+    print(classification_report(actuals_train, predictions_train))
+    print(classification_report(actuals_test, predictions_test))
+
+    return None
+
+
+# Helper functions ----------------------------------------------------------------------------------------------------
+
+def config(mode):
+    i_size = 380
+    b_size = 32
+
+    if mode == 'notebook':
+        base_directory = 'C:/Users/koros/Desktop/SUNS/Zadania/Zadanie3/SUNS-Zadanie3/data'
+    elif mode == 'desktop':
+        base_directory = 'D:/Skola/ING/SEM1/SUNS/SUNS-Zadanie3/data'
+    else:
+        base_directory = '/content/drive/MyDrive/data'
+    train_directory = os.path.join(base_directory, 'train')
+    test_directory = os.path.join(base_directory, 'test')
+    animal_folders = list(pathlib.Path(train_directory).glob('*'))
+
+    return i_size, b_size, base_directory, train_directory, test_directory, animal_folders
+
+
+def create_augmented_cnn_model():
+    resize_and_rescale = keras.Sequential([
+        keras.layers.Resizing(img_size, img_size),
+        keras.layers.Rescaling(1. / 255)
+    ])
+
+    data_augmentation = keras.Sequential([
+        keras.layers.RandomFlip("horizontal_and_vertical"),
+        keras.layers.RandomRotation(0.2),
+    ])
+
+    model = keras.Sequential()
+    model.add(resize_and_rescale)
+    model.add(data_augmentation)
+    model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu'))
+    model.add(keras.layers.MaxPooling2D())
+    model.add(keras.layers.Dropout(0.2))
+    model.add(keras.layers.Conv2D(filters=8, kernel_size=2, activation='relu'))
+    model.add(keras.layers.MaxPooling2D())
+    model.add(keras.layers.Dropout(0.3))
+    model.add(keras.layers.Flatten())
+    model.add(keras.layers.Dense(90, activation='softmax'))
+    return model
+
+
+# Plot functions ------------------------------------------------------------------------------------------------------
+def plot_confusion_matrix(cm, title):
+    plt.figure(figsize=(33, 13))
+    sns.heatmap(cm, annot=False, cmap='viridis', xticklabels=class_names, yticklabels=class_names)
+    plt.title(title, fontsize=20)
+    plt.xticks(rotation=60)
+    plt.tick_params(axis='x', labelsize=10)
+    plt.tick_params(axis='y', labelsize=10)
+    plt.show()
+
+    return None
+
+
+def plotHistory(history):
+    plt.figure(figsize=(12, 6))
+    plt.subplot(1, 2, 1)
+    plt.plot(history.history['accuracy'], label='train_accuracy')
+    plt.plot(history.history['val_accuracy'], label='val_accuracy')
+    plt.title('Accuracy/Epochs')
+    plt.xlabel('Epoch')
+    plt.ylabel('Accuracy')
+    plt.legend()
+
+    plt.subplot(1, 2, 2)
+    plt.plot(history.history['loss'], label='train_loss')
+    plt.plot(history.history['val_loss'], label='val_loss')
+    plt.title('Loss/Epochs')
+    plt.xlabel('Epoch')
+    plt.ylabel('Loss')
+    plt.legend()
 
     plt.tight_layout()
     plt.show()
