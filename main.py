@@ -102,7 +102,7 @@ def test_imagenet_model_on_test_data():
 
 def train_convolutions():
     model = create_augmented_cnn_model()
-    optimizer = keras.optimizers.Adam(learning_rate=0.00015)
+    optimizer = keras.optimizers.Adam(learning_rate=0.0001)
 
     model.compile(optimizer=optimizer,
                   loss='sparse_categorical_crossentropy',
@@ -343,23 +343,24 @@ def config(mode):
 
 
 def create_augmented_cnn_model():
+    img_size_for_my_model = 150
     resize_and_rescale = keras.Sequential([
-        keras.layers.Resizing(img_size, img_size),
+        keras.layers.Resizing(img_size_for_my_model, img_size_for_my_model),
         keras.layers.Rescaling(1. / 255)
     ])
 
     data_augmentation = keras.Sequential([
         keras.layers.RandomFlip("horizontal_and_vertical"),
-        keras.layers.RandomRotation(0.2),
+        keras.layers.RandomRotation(0.20),
     ])
 
     model = keras.Sequential()
     model.add(resize_and_rescale)
     model.add(data_augmentation)
-    model.add(keras.layers.Conv2D(filters=32, kernel_size=3, activation='relu'))
+    model.add(keras.layers.Conv2D(filters=16, kernel_size=3, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
     model.add(keras.layers.Dropout(0.2))
-    model.add(keras.layers.Conv2D(filters=8, kernel_size=2, activation='relu'))
+    model.add(keras.layers.Conv2D(filters=16, kernel_size=3, activation='relu'))
     model.add(keras.layers.MaxPooling2D())
     model.add(keras.layers.Dropout(0.3))
     model.add(keras.layers.Flatten())
@@ -408,8 +409,6 @@ def plotHistory(history):
 AUTOTUNE = tf.data.AUTOTUNE
 
 img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('notebook')
-# img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('desktop')
-# img_size, batch_size, base_dir, train_dir, test_dir, animals_folders = config('colab')
 train_ds, val_ds, test_ds, class_names = initialize_data()
 
 train_ds = train_ds.cache().prefetch(buffer_size=AUTOTUNE)
@@ -418,9 +417,9 @@ test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 # show90animals()
 # test_imagenet_model_on_test_data()
-# train_convolutions()
+train_convolutions()
 # train_transfer_model()
 # createDataset()
-clusterDataset()
-show_cluster_images()
-show_average_images()
+# clusterDataset()
+# show_cluster_images()
+# show_average_images()
