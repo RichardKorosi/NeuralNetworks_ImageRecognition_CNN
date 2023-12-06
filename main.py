@@ -37,7 +37,7 @@ from sklearn.preprocessing import MinMaxScaler
 # Ostatne zdroje:
 # https://www.tensorflow.org/tutorials/load_data/images [1]
 # https://www.tensorflow.org/tensorboard/get_started [2]
-# https://www.tensorflow.org/tutorials/images/transfer_learning [3]
+# https://www.tensorflow.org/tutorials/imzages/transfer_learning [3]
 # https://www.tensorflow.org/tutorials/images/data_augmentation [4]
 # Predosle Zadania (1,2), zdroje sú dostupné v nich [5]
 # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html [6]
@@ -415,6 +415,7 @@ def create_augmented_cnn_model():
 
 
 def create_transfer_model():
+    # Tato funkcia bola inspirovana zdrojovim kodom [3] (vid. ZDROJE KU KODOM)
     preprocess_input = keras.applications.efficientnet.preprocess_input
     data_augmentation = keras.Sequential([
         keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
@@ -434,6 +435,8 @@ def create_transfer_model():
     x = keras.layers.Dropout(0.2)(x)
     outputs = prediction_layer(x)
     model = keras.Model(inputs, outputs)
+    base_model.summary()
+    model.summary()
     return model
 
 
@@ -492,5 +495,5 @@ test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
 # clusterDataset()
 # show_cluster_images()
 # show_average_images()
-# train_neural_network()
-train_transfer_model()
+train_neural_network()
+# train_transfer_model()
