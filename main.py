@@ -95,7 +95,7 @@ def show90animals():
     return None
 
 
-def test_imagenet_model_on_test_data():
+def test_imagenet_model_on_train_data():
     # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     model = EfficientNetB4(weights='imagenet')
     label_predictions = {}
@@ -485,7 +485,7 @@ val_ds = val_ds.cache().prefetch(buffer_size=AUTOTUNE)
 test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
 
 show90animals()
-test_imagenet_model_on_test_data()
+test_imagenet_model_on_train_data()
 train_convolutions()
 train_transfer_model()
 createDataset()
