@@ -125,7 +125,7 @@ def test_imagenet_model_on_test_data():
 
 
 def train_convolutions():
-    # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovim kodom [5] (seminar2.py a main.py) (vid. ZDROJE KU KODOM)
     # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     model = create_augmented_cnn_model()
     optimizer = keras.optimizers.Adam(learning_rate=0.0001)
@@ -273,7 +273,7 @@ def show_average_images():
 
 
 def train_neural_network():
-    # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovim kodom [5] (seminar2.py a main.py) (vid. ZDROJE KU KODOM)
     # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     df = pd.read_csv("dataset1.csv")
     X = df.drop(columns=['pathOfImage', 'actualClass'])
@@ -326,7 +326,7 @@ def train_neural_network():
 
 
 def train_transfer_model():
-    # Tato funkcia bola inspirovana zdrojovim kodom [5],[6] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovim kodom [5] (seminar2.py a main.py), [6] (vid. ZDROJE KU KODOM)
     # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     model = create_transfer_model()
     base_learning_rate = 0.0001
@@ -438,7 +438,7 @@ def create_transfer_model():
 
 
 def plot_confusion_matrix(cm, title):
-    # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovim kodom [5] (seminar2.py) (vid. ZDROJE KU KODOM)
     plt.figure(figsize=(33, 13))
     sns.heatmap(cm, annot=False, cmap='viridis', xticklabels=class_names, yticklabels=class_names)
     plt.title(title, fontsize=20)
@@ -451,7 +451,7 @@ def plot_confusion_matrix(cm, title):
 
 
 def plotHistory(history):
-    # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovim kodom [5] (seminar2.py) (vid. ZDROJE KU KODOM)
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
     plt.plot(history.history['accuracy'], label='train_accuracy')
