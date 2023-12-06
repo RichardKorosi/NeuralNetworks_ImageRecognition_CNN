@@ -23,25 +23,22 @@ from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import MinMaxScaler
 
 
-# ZDROJE KU KODOM ------------------------------------------------------------------------------------------------------
-# ======================================================================================================================
 # Zdrojove kody z cviceni (dostupne na dokumentovom serveri AIS):
 #   Autor: Ing. Vanesa Andicsová
 #   Subory:
 #       generators.py
-# ======================================================================================================================
+
 # Grafy, Pomocne funkcie, Casti funkcii...:
 #  Autor/Spoluautor: Github Copilot, ChatGPT
 #  Grafy, pomocne funkcie a casti funkcii boli vypracoavane za pomoci Github Copilota a ChatGPT
-# ======================================================================================================================
+
 # Ostatne zdroje:
 # https://www.tensorflow.org/tutorials/load_data/images [1]
 # https://www.tensorflow.org/tensorboard/get_started [2]
 # https://www.tensorflow.org/tutorials/imzages/transfer_learning [3]
 # https://www.tensorflow.org/tutorials/images/data_augmentation [4]
-# Predosle Zadania (1,2), zdroje sú dostupné v nich [5]
+# Predosle vypracovanie zadania (1,2), zdroje sú dostupné v nich [5]
 # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html [6]
-# ======================================================================================================================
 
 def initialize_data():
     # Tato funkcia bola inspirovana zdrojovim kodom generators.py a [1] (vid. ZDROJE KU KODOM)
