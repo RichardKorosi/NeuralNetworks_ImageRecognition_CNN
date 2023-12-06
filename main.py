@@ -5,7 +5,11 @@ import pandas as pd
 import pathlib
 import os
 import PIL.Image
+from keras import Sequential
 from keras.src.applications import EfficientNetB4
+from keras.src.callbacks import EarlyStopping
+from keras.src.layers import Dense
+from keras.src.optimizers import Adam
 from sklearn.decomposition import PCA
 from sklearn.metrics import confusion_matrix
 import math
@@ -14,6 +18,9 @@ import tensorflow as tf
 from sklearn.metrics import classification_report
 from sklearn.cluster import KMeans
 from collections import Counter
+
+from sklearn.model_selection import train_test_split
+from sklearn.preprocessing import MinMaxScaler
 
 
 # ZDROJE KU KODOM ------------------------------------------------------------------------------------------------------
@@ -33,6 +40,7 @@ from collections import Counter
 # https://www.tensorflow.org/tutorials/images/transfer_learning [3]
 # https://www.tensorflow.org/tutorials/images/data_augmentation [4]
 # Predosle Zadania (1,2), zdroje sú dostupné v nich [5]
+# https://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html [6]
 # ======================================================================================================================
 
 def initialize_data():
@@ -267,30 +275,61 @@ def show_average_images():
     return None
 
 
-def create_transfer_model():
-    preprocess_input = keras.applications.efficientnet.preprocess_input
-    data_augmentation = keras.Sequential([
-        keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
-        keras.layers.experimental.preprocessing.RandomRotation(0.2),
-    ])
-    base_model = EfficientNetB4(weights='imagenet', include_top=False)
-    base_model.trainable = False
-    global_average_layer = keras.layers.GlobalAveragePooling2D()
-    prediction_layer = keras.layers.Dense(90, activation='softmax')
+def train_neural_network():
+    # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
+    df = pd.read_csv("dataset1.csv")
+    X = df.drop(columns=['pathOfImage', 'actualClass'])
+    df = pd.get_dummies(df, columns=['actualClass'], prefix='', prefix_sep='')
+    feature_cols = [col for col in df.columns if col.startswith('feature_')]
+    y = df.drop(columns=['pathOfImage'])
+    y = y.drop(columns=feature_cols)
 
-    inputs = keras.Input(shape=(300, 300, 3))
-    x = data_augmentation(inputs)
-    x = preprocess_input(x)
-    x = base_model(x, training=False)
-    x = global_average_layer(x)
-    x = keras.layers.Dropout(0.2)(x)
-    outputs = prediction_layer(x)
-    model = keras.Model(inputs, outputs)
-    return model
+    X_train, X_valid_test, y_train, y_valid_test = train_test_split(X, y, shuffle=True, test_size=0.2, random_state=42)
+    X_valid, X_test, y_valid, y_test = train_test_split(X_valid_test, y_valid_test, shuffle=True, test_size=0.5,
+                                                        random_state=42)
+
+    scaler = MinMaxScaler()
+    X_train = scaler.fit_transform(X_train)
+    X_valid = scaler.transform(X_valid)
+    X_test = scaler.transform(X_test)
+
+    X_train = pd.DataFrame(X_train, columns=X.columns)
+    X_valid = pd.DataFrame(X_valid, columns=X.columns)
+    X_test = pd.DataFrame(X_test, columns=X.columns)
+
+    early_stopping = EarlyStopping(monitor='val_loss', patience=2, restore_best_weights=True)
+    model = Sequential()
+    model.add(Dense(20, input_dim=X_train.shape[1], activation='relu'))
+    model.add(Dense(20, activation='relu'))
+    model.add(Dense(20, activation='relu'))
+    model.add(Dense(90, activation='softmax'))
+
+    model.compile(loss='categorical_crossentropy', optimizer=Adam(learning_rate=0.000025), metrics=['accuracy'])
+    history = model.fit(x=X_train, y=y_train, validation_data=(X_valid, y_valid), epochs=200, batch_size=32,
+                        callbacks=[early_stopping])
+
+    train_scores = model.evaluate(X_train, y_train, verbose=0)
+    test_scores = model.evaluate(X_test, y_test, verbose=0)
+    print(f"Train accuracy: {train_scores[1]:.4f}")
+    print(f"Test accuracy: {test_scores[1]:.4f}")
+
+    predictions_train = model.predict(X_train)
+    predictions_train = np.argmax(predictions_train, axis=1)
+    cm_train = confusion_matrix(np.argmax(y_train.values, axis=1), predictions_train)
+    plot_confusion_matrix(cm_train, title="Confusion matrix on train set")
+
+    predictions_test = model.predict(X_test)
+    predictions_test = np.argmax(predictions_test, axis=1)
+    cm_test = confusion_matrix(np.argmax(y_test.values, axis=1), predictions_test)
+    plot_confusion_matrix(cm_test, title="Confusion matrix on test set")
+
+    plotHistory(history)
+    return None
 
 
 def train_transfer_model():
-    # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovim kodom [5],[6] (vid. ZDROJE KU KODOM)
     # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     model = create_transfer_model()
     base_learning_rate = 0.0001
@@ -375,6 +414,29 @@ def create_augmented_cnn_model():
     return model
 
 
+def create_transfer_model():
+    preprocess_input = keras.applications.efficientnet.preprocess_input
+    data_augmentation = keras.Sequential([
+        keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
+        keras.layers.experimental.preprocessing.RandomRotation(0.2),
+    ])
+    base_model = EfficientNetB4(weights='imagenet', include_top=False)
+    base_model.trainable = False
+    global_average_layer = keras.layers.GlobalAveragePooling2D()
+    prediction_layer = keras.layers.Dense(90, activation='softmax')
+
+    inputs = keras.Input(shape=(380, 380, 3))
+    resize = keras.layers.Resizing(150, 150)(inputs)
+    x = data_augmentation(resize)
+    x = preprocess_input(x)
+    x = base_model(x, training=False)
+    x = global_average_layer(x)
+    x = keras.layers.Dropout(0.2)(x)
+    outputs = prediction_layer(x)
+    model = keras.Model(inputs, outputs)
+    return model
+
+
 def plot_confusion_matrix(cm, title):
     # Tato funkcia bola inspirovana zdrojovim kodom [5] (vid. ZDROJE KU KODOM)
     plt.figure(figsize=(33, 13))
@@ -430,5 +492,5 @@ test_ds = test_ds.cache().prefetch(buffer_size=AUTOTUNE)
 # clusterDataset()
 # show_cluster_images()
 # show_average_images()
-create_transfer_model()
+# train_neural_network()
 train_transfer_model()
