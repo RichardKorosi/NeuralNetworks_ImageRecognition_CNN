@@ -342,14 +342,12 @@ def train_transfer_model():
     print(f"Train accuracy: {train_scores[1]:.4f}")
     print(f"Test accuracy: {test_scores[1]:.4f}")
 
-    # Predictions and Confusion Matrix on Train Set
     predictions_train = model.predict(train_ds)
     predictions_train = np.argmax(predictions_train, axis=1)
     actuals_train = np.concatenate([y for x, y in train_ds], axis=0)
     cm_train = confusion_matrix(actuals_train, predictions_train)
     plot_confusion_matrix(cm_train, title="Confusion matrix on train set")
 
-    # Predictions and Confusion Matrix on Test Set
     predictions_test = model.predict(test_ds)
     predictions_test = np.argmax(predictions_test, axis=1)
     actuals_test = np.concatenate([y for x, y in test_ds], axis=0)
