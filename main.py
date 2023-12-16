@@ -41,7 +41,7 @@ from sklearn.preprocessing import MinMaxScaler
 # https://scikit-learn.org/stable/modules/generated/sklearn.metrics.classification_report.html [6]
 
 def initialize_data():
-    # Tato funkcia bola inspirovana zdrojovim kodom generators.py a [1] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovym kodom generators.py a [1] (vid. ZDROJE KU KODOM)
     print("Train data: ")
     train_das = keras.utils.image_dataset_from_directory(
         train_dir,
@@ -76,7 +76,7 @@ def initialize_data():
 
 
 def show90animals():
-    # Tato funkcia bola inspirovana zdrojovim kodom generators.py (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovym kodom generators.py (vid. ZDROJE KU KODOM)
     # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     grid_size = math.ceil(math.sqrt(len(animals_folders)))
 
@@ -125,7 +125,7 @@ def test_imagenet_model_on_train_data():
 
 
 def train_convolutions():
-    # Tato funkcia bola inspirovana zdrojovim kodom [5] (seminar2.py a main.py) (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovym kodom [5] (seminar2.py a main.py) (vid. ZDROJE KU KODOM)
     # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     model = create_augmented_cnn_model()
     optimizer = keras.optimizers.Adam(learning_rate=0.0001)
@@ -273,7 +273,7 @@ def show_average_images():
 
 
 def train_neural_network():
-    # Tato funkcia bola inspirovana zdrojovim kodom [5] (seminar2.py a main.py) (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovym kodom [5] (seminar2.py a main.py) (vid. ZDROJE KU KODOM)
     # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     df = pd.read_csv("dataset1.csv")
     X = df.drop(columns=['pathOfImage', 'actualClass'])
@@ -326,7 +326,7 @@ def train_neural_network():
 
 
 def train_transfer_model():
-    # Tato funkcia bola inspirovana zdrojovim kodom [5] (seminar2.py a main.py), [6] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovym kodom [5] (seminar2.py a main.py), [6] (vid. ZDROJE KU KODOM)
     # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
     model = create_transfer_model()
     base_learning_rate = 0.0001
@@ -363,7 +363,7 @@ def train_transfer_model():
 
 
 def config(mode):
-    # Tato funkcia bola inspirovana zdrojovim kodom generators.py (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovym kodom generators.py (vid. ZDROJE KU KODOM)
     i_size = 380
     b_size = 32
 
@@ -381,7 +381,7 @@ def config(mode):
 
 
 def create_augmented_cnn_model():
-    # Tato funkcia bola inspirovana zdrojovim kodom a navodom [1] a [4] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovym kodom a navodom [1] a [4] (vid. ZDROJE KU KODOM)
     # Tato funkcia bola vypracovana za pomoci Github Copilota (vid. ZDROJE KU KODOM)
 
     img_size_for_my_model = 150
@@ -410,7 +410,7 @@ def create_augmented_cnn_model():
 
 
 def create_transfer_model():
-    # Tato funkcia bola inspirovana zdrojovim kodom [3] (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovym kodom [3] (vid. ZDROJE KU KODOM)
     preprocess_input = keras.applications.efficientnet.preprocess_input
     data_augmentation = keras.Sequential([
         keras.layers.experimental.preprocessing.RandomFlip("horizontal_and_vertical"),
@@ -436,7 +436,7 @@ def create_transfer_model():
 
 
 def plot_confusion_matrix(cm, title):
-    # Tato funkcia bola inspirovana zdrojovim kodom [5] (seminar2.py) (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovym kodom [5] (seminar2.py) (vid. ZDROJE KU KODOM)
     plt.figure(figsize=(33, 13))
     sns.heatmap(cm, annot=False, cmap='viridis', xticklabels=class_names, yticklabels=class_names)
     plt.title(title, fontsize=20)
@@ -449,7 +449,7 @@ def plot_confusion_matrix(cm, title):
 
 
 def plotHistory(history):
-    # Tato funkcia bola inspirovana zdrojovim kodom [5] (seminar2.py) (vid. ZDROJE KU KODOM)
+    # Tato funkcia bola inspirovana zdrojovym kodom [5] (seminar2.py) (vid. ZDROJE KU KODOM)
     plt.figure(figsize=(12, 6))
     plt.subplot(1, 2, 1)
     plt.plot(history.history['accuracy'], label='train_accuracy')
